@@ -1,8 +1,8 @@
-package org.example.test.service.impl;
+package testApplication.service.impl;
 
 import org.example.di_container.annotation.Service;
-import org.example.test.entity.Person;
-import org.example.test.service.PoemService;
+import testApplication.entity.Person;
+import testApplication.service.PoemService;
 
 @Service
 public class DedMorozPoemServiceImpl implements PoemService {
@@ -12,7 +12,7 @@ public class DedMorozPoemServiceImpl implements PoemService {
 
     @Override
     public void preparePoem(Person person) {
-        System.out.printf("%s is preparing a poem for Ded Moroz%%n", person.getName());
+        System.out.printf("%s подготавливает стишок для Деда Мороза %n", person.getName());
         if (person.getAge() > 30) {
             System.out.println(ADULT_RESP);
         } else if (person.getAge() > 20) {

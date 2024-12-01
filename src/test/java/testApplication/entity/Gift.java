@@ -1,4 +1,4 @@
-package org.example.test.entity;
+package testApplication.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,7 +20,7 @@ public class Gift {
         System.out.println("Подарок \n" +
                 "\tname = '" + name + "'\n" +
                 "\tprice = " + price + "\n" +
-                "\t type = " + type.getName()
+                "\ttype = " + type.getName()
         );
     }
 }

@@ -1,7 +1,7 @@
-package org.example.test.service.impl;
+package testApplication.service.impl;
 
 import org.example.di_container.annotation.Service;
-import org.example.test.service.ShowService;
+import testApplication.service.ShowService;
 
 @Service
 public class RussianShowService implements ShowService {

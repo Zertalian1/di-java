@@ -8,8 +8,8 @@ public class JavaBeanConfigurator implements BeanConfigurator {
 
     private final Reflections scanner;
 
-    public JavaBeanConfigurator(String packageToScan) {
-        this.scanner = new Reflections(packageToScan);
+    public JavaBeanConfigurator(Reflections scanner) {
+        this.scanner = scanner;
 
     }
 

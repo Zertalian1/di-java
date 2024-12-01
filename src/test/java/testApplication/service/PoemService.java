@@ -1,6 +1,6 @@
-package org.example.test.service;
+package testApplication.service;
 
-import org.example.test.entity.Person;
+import testApplication.entity.Person;
 
 public interface PoemService {
 

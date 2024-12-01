@@ -1,4 +1,4 @@
-package org.example.test.entity;
+package testApplication.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

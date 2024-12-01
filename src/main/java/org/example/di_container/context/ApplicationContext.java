@@ -5,6 +5,9 @@ import lombok.SneakyThrows;
 import org.example.di_container.annotation.*;
 import org.example.di_container.enums.ScopeType;
 import org.example.di_container.factory.DefaultBeanFactory;
+import org.example.di_container.processor.BeanProcessor;
+import org.example.di_container.processor.PostConstructBeanProcessor;
+import org.example.di_container.processor.PreDestroyBeanProcessor;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Method;
@@ -18,10 +21,14 @@ public class ApplicationContext {
     @Setter
     private DefaultBeanFactory beanFactory;
     private final Map<Class, Object> beanMap = new ConcurrentHashMap<>();
+    private final Map<Class, Object> createdBeans = new ConcurrentHashMap<>();
+    private final BeanProcessor postConstructBeanProcessor = new PostConstructBeanProcessor();
+    private final BeanProcessor preDestroyBeanProcessor = new PreDestroyBeanProcessor();
     private final Reflections scanner;
+    private boolean isRunning;
 
-    public ApplicationContext(String packageToScan) {
-        this.scanner = new Reflections(packageToScan);
+    public ApplicationContext(Reflections scanner) {
+        this.scanner = scanner;
     }
 
     public <T> T getBean(Class<T> clazz) {
@@ -30,6 +37,7 @@ public class ApplicationContext {
         }
 
         T bean = beanFactory.getBean(clazz);
+        postConstructBeanProcessor.process(bean);
 
         if (bean.getClass().getAnnotation(Bean.class) != null || bean.getClass().getAnnotation(Service.class) != null) {
             Scope annotation = bean.getClass().getAnnotation(Scope.class);
@@ -37,6 +45,7 @@ public class ApplicationContext {
                 beanMap.put(clazz, bean);
             }
         }
+        createdBeans.put(clazz, bean);
 
         return bean;
     }
@@ -54,12 +63,17 @@ public class ApplicationContext {
         if (annotation == null || annotation.scope() == ScopeType.singleton) {
             beanMap.put(clazz, bean);
         }
+        createdBeans.put(clazz, bean);
 
         return bean;
     }
 
-    // увеличить уровень абстракциии для инитов
-    private void initConfigurations() {
+    public void start() {
+        if (isRunning) {
+            stop();
+        }
+        isRunning = true;
+
         Set<Class<?>> configurations = scanner.getTypesAnnotatedWith(Configuration.class);
         for (Class<?> configuration : configurations) {
             var configurationBean = getBean(configuration);
@@ -69,17 +83,13 @@ public class ApplicationContext {
         }
     }
 
-    private void initService() {
-        Set<Class<?>> services = scanner.getTypesAnnotatedWith(Service.class);
-        for (Class<?> service : services) {
-            getBean(service);
+    public  void stop() {
+        for (Map.Entry<Class, Object> entry : createdBeans.entrySet()) {
+            preDestroyBeanProcessor.process(entry.getValue());
         }
-    }
-
-
-    public void start() {
-        initConfigurations();
-        initService();
+        createdBeans.clear();
+        beanMap.clear();
+        isRunning = false;
     }
 
 }

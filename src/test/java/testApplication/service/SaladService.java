@@ -1,4 +1,4 @@
-package org.example.test.service;
+package testApplication.service;
 
 public interface SaladService {
 

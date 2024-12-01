@@ -5,6 +5,7 @@ import org.example.di_container.annotation.Autowired;
 import org.example.di_container.configurator.BeanConfigurator;
 import org.example.di_container.configurator.JavaBeanConfigurator;
 import org.example.di_container.context.ApplicationContext;
+import org.reflections.Reflections;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -15,8 +16,8 @@ public class DefaultBeanFactory implements BeanFactory {
     private final BeanConfigurator beanConfigurator;
     private final ApplicationContext applicationContext;
 
-    public DefaultBeanFactory(String packageToScan, ApplicationContext applicationContext) {
-        this.beanConfigurator = new JavaBeanConfigurator(packageToScan);
+    public DefaultBeanFactory(Reflections scanner, ApplicationContext applicationContext) {
+        this.beanConfigurator = new JavaBeanConfigurator(scanner);
         this.applicationContext = applicationContext;
     }
 

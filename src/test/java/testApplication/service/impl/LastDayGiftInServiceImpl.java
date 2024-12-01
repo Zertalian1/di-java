@@ -1,9 +1,9 @@
-package org.example.test.service.impl;
+package testApplication.service.impl;
 
 import org.example.di_container.annotation.Service;
-import org.example.test.entity.Gift;
-import org.example.test.entity.Person;
-import org.example.test.service.GiftService;
+import testApplication.entity.Gift;
+import testApplication.entity.Person;
+import testApplication.service.GiftService;
 
 @Service
 public class LastDayGiftInServiceImpl implements GiftService {
