@@ -15,4 +15,12 @@ public class Gift {
     public static Gift getSimpleGift() {
         return new Gift("Уголь", BigDecimal.valueOf(4999.9), GiftType.BAD_GIFT);
     }
+
+    public void describeGift() {
+        System.out.println("Подарок \n" +
+                "\tname = '" + name + "'\n" +
+                "\tprice = " + price + "\n" +
+                "\t type = " + type.getName()
+        );
+    }
 }

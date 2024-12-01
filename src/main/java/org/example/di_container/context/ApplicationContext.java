@@ -31,23 +31,24 @@ public class ApplicationContext {
 
         T bean = beanFactory.getBean(clazz);
 
-        Scope annotation = bean.getClass().getAnnotation(Scope.class);
-        if (annotation == null || annotation.scope() == ScopeType.singleton) {
-            beanMap.put(clazz, bean);
+        if (bean.getClass().getAnnotation(Bean.class) != null || bean.getClass().getAnnotation(Service.class) != null) {
+            Scope annotation = bean.getClass().getAnnotation(Scope.class);
+            if (annotation == null || annotation.scope() == ScopeType.singleton) {
+                beanMap.put(clazz, bean);
+            }
         }
 
         return bean;
     }
 
     @SneakyThrows
-    public <T> T getBean(Class<?> clazz, Method method) {
+    public <T> T getBean(Class<?> clazz, Object objectOwner,  Method initMethod) {
 
-        if (beanMap.containsKey(method.getReturnType())) {
+        if (beanMap.containsKey(clazz)) {
             return (T) beanMap.get(clazz);
         }
 
-        Object instance = clazz.getDeclaredConstructor().newInstance();
-        T bean = (T) method.invoke(instance);
+        T bean = (T) initMethod.invoke(objectOwner);
 
         Scope annotation = bean.getClass().getAnnotation(Scope.class);
         if (annotation == null || annotation.scope() == ScopeType.singleton) {
@@ -57,22 +58,28 @@ public class ApplicationContext {
         return bean;
     }
 
-    // Сделать мапу, какой бин в каком конфиге определён
+    // увеличить уровень абстракциии для инитов
     private void initConfigurations() {
         Set<Class<?>> configurations = scanner.getTypesAnnotatedWith(Configuration.class);
         for (Class<?> configuration : configurations) {
+            var configurationBean = getBean(configuration);
             Arrays.stream(configuration.getMethods())
                     .filter(method -> method.isAnnotationPresent(Bean.class))
-                    .forEach(method -> getBean(configuration, method));
+                    .forEach(method -> getBean(method.getReturnType(), configurationBean, method));
+        }
+    }
+
+    private void initService() {
+        Set<Class<?>> services = scanner.getTypesAnnotatedWith(Service.class);
+        for (Class<?> service : services) {
+            getBean(service);
         }
     }
 
 
     public void start() {
-        Set<Class<?>> services = scanner.getTypesAnnotatedWith(Service.class);
-        for (Class<?> service : services) {
-            getBean(service);
-        }
+        initConfigurations();
+        initService();
     }
 
 }

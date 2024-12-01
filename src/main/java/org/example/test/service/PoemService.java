@@ -4,5 +4,5 @@ import org.example.test.entity.Person;
 
 public interface PoemService {
 
-    void preparePoem(Person child);
+    void preparePoem(Person person);
 }

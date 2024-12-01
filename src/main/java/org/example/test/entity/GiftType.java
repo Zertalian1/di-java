@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum GiftType {
-    BAD_GIFT("BAD"),
-    GOOD_GIFT("GOOD");
+    BAD_GIFT("Плохой подарок"),
+    GOOD_GIFT("Хороший подарок");
 
     private final String name;
 

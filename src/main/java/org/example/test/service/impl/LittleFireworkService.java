@@ -8,7 +8,8 @@ public class LittleFireworkService implements FireworkService {
 
     @Override
     public void start() {
-        System.out.println("ПЩЩЩЩЩ, пуп");
+        System.out.println("Launching fireworks");
+        System.out.println("PSSSSSSSSS, kaboom");
     }
 
 }
