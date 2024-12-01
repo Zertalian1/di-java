@@ -2,9 +2,12 @@ package org.example.di_container.context;
 
 import lombok.Setter;
 import lombok.SneakyThrows;
-import org.example.di_container.annotation.*;
+import org.example.di_container.annotation.Bean;
+import org.example.di_container.annotation.Configuration;
+import org.example.di_container.annotation.Scope;
+import org.example.di_container.annotation.Service;
 import org.example.di_container.enums.ScopeType;
-import org.example.di_container.factory.DefaultBeanFactory;
+import org.example.di_container.factory.BeanFactory;
 import org.example.di_container.processor.BeanProcessor;
 import org.example.di_container.processor.PostConstructBeanProcessor;
 import org.example.di_container.processor.PreDestroyBeanProcessor;
@@ -19,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ApplicationContext {
 
     @Setter
-    private DefaultBeanFactory beanFactory;
+    private BeanFactory beanFactory;
     private final Map<Class, Object> beanMap = new ConcurrentHashMap<>();
     private final Map<Class, Object> createdBeans = new ConcurrentHashMap<>();
     private final BeanProcessor postConstructBeanProcessor = new PostConstructBeanProcessor();
@@ -51,7 +54,7 @@ public class ApplicationContext {
     }
 
     @SneakyThrows
-    public <T> T getBean(Class<?> clazz, Object objectOwner,  Method initMethod) {
+    public <T> T getBean(Class<?> clazz, Object objectOwner, Method initMethod) {
 
         if (beanMap.containsKey(clazz)) {
             return (T) beanMap.get(clazz);
@@ -59,13 +62,19 @@ public class ApplicationContext {
 
         T bean = (T) initMethod.invoke(objectOwner);
 
-        Scope annotation = bean.getClass().getAnnotation(Scope.class);
-        if (annotation == null || annotation.scope() == ScopeType.singleton) {
-            beanMap.put(clazz, bean);
+        if (initMethod.getAnnotation(Bean.class) != null) {
+            Scope annotation = initMethod.getAnnotation(Scope.class);
+            if (annotation == null || annotation.scope() == ScopeType.singleton) {
+                beanMap.put(clazz, bean);
+            }
         }
         createdBeans.put(clazz, bean);
 
         return bean;
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 
     public void start() {
@@ -77,13 +86,11 @@ public class ApplicationContext {
         Set<Class<?>> configurations = scanner.getTypesAnnotatedWith(Configuration.class);
         for (Class<?> configuration : configurations) {
             var configurationBean = getBean(configuration);
-            Arrays.stream(configuration.getMethods())
-                    .filter(method -> method.isAnnotationPresent(Bean.class))
-                    .forEach(method -> getBean(method.getReturnType(), configurationBean, method));
+            Arrays.stream(configuration.getMethods()).filter(method -> method.isAnnotationPresent(Bean.class)).forEach(method -> getBean(method.getReturnType(), configurationBean, method));
         }
     }
 
-    public  void stop() {
+    public void stop() {
         for (Map.Entry<Class, Object> entry : createdBeans.entrySet()) {
             preDestroyBeanProcessor.process(entry.getValue());
         }
