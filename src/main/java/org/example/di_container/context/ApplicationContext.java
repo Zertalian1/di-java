@@ -8,15 +8,14 @@ import org.example.di_container.annotation.Scope;
 import org.example.di_container.annotation.Service;
 import org.example.di_container.enums.ScopeType;
 import org.example.di_container.factory.BeanFactory;
+import org.example.di_container.interceptors.AutowiredInterceptor;
 import org.example.di_container.processor.BeanProcessor;
 import org.example.di_container.processor.PostConstructBeanProcessor;
 import org.example.di_container.processor.PreDestroyBeanProcessor;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ApplicationContext {
@@ -35,42 +34,81 @@ public class ApplicationContext {
     }
 
     public <T> T getBean(Class<T> clazz) {
-        if (beanMap.containsKey(clazz)) {
-            return (T) beanMap.get(clazz);
+        return getBean(clazz, null);
+    }
+
+    public <T> T getBean(Class<T> clazz, Set<Class> callStack) {
+
+        T bean = (T) containsInstance(clazz);
+        if (bean != null) {
+            return bean;
         }
 
-        T bean = beanFactory.getBean(clazz);
-        postConstructBeanProcessor.process(bean);
+        synchronized (clazz) {
 
-        if (bean.getClass().getAnnotation(Bean.class) != null || bean.getClass().getAnnotation(Service.class) != null) {
-            Scope annotation = bean.getClass().getAnnotation(Scope.class);
-            if (annotation == null || annotation.scope() == ScopeType.singleton) {
-                beanMap.put(clazz, bean);
+            bean = (T) containsInstance(clazz);
+
+            if (bean != null) {
+                return bean;
             }
-        }
-        createdBeans.put(clazz, bean);
 
-        return bean;
+            if (callStack == null) {
+                callStack = new HashSet<>();
+                callStack.add(clazz);
+            } else {
+                if (callStack.contains(clazz)) {
+                    throw new RuntimeException("Cyclic dependency during initialization " + clazz.getSimpleName());
+                }
+            }
+
+
+            bean = beanFactory.getBean(clazz, callStack);
+            postConstructBeanProcessor.process(bean);
+            //System.out.println(Thread.currentThread().getName() + " created bean " + bean.toString());
+
+            if (bean.getClass().getAnnotation(Bean.class) != null || bean.getClass().getAnnotation(Service.class) != null) {
+                Scope annotation = bean.getClass().getAnnotation(Scope.class);
+                if (annotation == null || annotation.scope() == ScopeType.singleton) {
+                    Class beanClass = bean.getClass();
+                    if (bean.getClass().getAnnotation(Service.class) != null) {
+                        bean = AutowiredInterceptor.getProxy(bean, this);
+                    }
+                    beanMap.put(beanClass, bean);
+                    //System.out.println(Thread.currentThread().getName() + " put to  bean Map " + bean.toString() + " to  class " + clazz);
+                }
+            }
+            createdBeans.put(bean.getClass(), bean);
+
+            return bean;
+        }
     }
 
     @SneakyThrows
     public <T> T getBean(Class<?> clazz, Object objectOwner, Method initMethod) {
 
-        if (beanMap.containsKey(clazz)) {
-            return (T) beanMap.get(clazz);
+        T bean = (T) containsInstance(clazz);
+        if (bean != null) {
+            return bean;
         }
+        synchronized (clazz) {
 
-        T bean = (T) initMethod.invoke(objectOwner);
-
-        if (initMethod.getAnnotation(Bean.class) != null) {
-            Scope annotation = initMethod.getAnnotation(Scope.class);
-            if (annotation == null || annotation.scope() == ScopeType.singleton) {
-                beanMap.put(clazz, bean);
+            bean = (T) containsInstance(clazz);
+            if (bean != null) {
+                return bean;
             }
-        }
-        createdBeans.put(clazz, bean);
 
-        return bean;
+            bean = (T) initMethod.invoke(objectOwner);
+
+            if (initMethod.getAnnotation(Bean.class) != null) {
+                Scope annotation = initMethod.getAnnotation(Scope.class);
+                if (annotation == null || annotation.scope() == ScopeType.singleton) {
+                    beanMap.put(bean.getClass(), bean);
+                }
+            }
+            createdBeans.put(bean.getClass(), bean);
+
+            return bean;
+        }
     }
 
     public boolean isRunning() {
@@ -88,6 +126,11 @@ public class ApplicationContext {
             var configurationBean = getBean(configuration);
             Arrays.stream(configuration.getMethods()).filter(method -> method.isAnnotationPresent(Bean.class)).forEach(method -> getBean(method.getReturnType(), configurationBean, method));
         }
+
+        Set<Class<?>> services = scanner.getTypesAnnotatedWith(Service.class);
+        for (Class<?> service : services) {
+            getBean(service);
+        }
     }
 
     public void stop() {
@@ -97,6 +140,18 @@ public class ApplicationContext {
         createdBeans.clear();
         beanMap.clear();
         isRunning = false;
+    }
+
+    Object containsInstance(Class<?> clazz) {
+        if (beanMap.containsKey(clazz)) {
+            return beanMap.get(clazz);
+        }
+        for (Map. Entry<Class, Object> entry : beanMap.entrySet()) {
+            if (clazz.isAssignableFrom(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
 }

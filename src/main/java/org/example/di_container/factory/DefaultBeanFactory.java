@@ -10,6 +10,7 @@ import org.reflections.Reflections;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class DefaultBeanFactory implements BeanFactory {
 
@@ -23,7 +24,7 @@ public class DefaultBeanFactory implements BeanFactory {
 
     @Override
     @SneakyThrows
-    public <T> T getBean(Class<T> clazz) {
+    public <T> T getBean(Class<T> clazz, Set<Class> callStack) {
         final Class<? extends T> implementationClass = clazz.isInterface()
                 ? beanConfigurator.getImplementationClass(clazz)
                 : clazz;
@@ -36,10 +37,16 @@ public class DefaultBeanFactory implements BeanFactory {
 
         for (Field field : filteredFields) {
             field.setAccessible(true);
-            field.set(bean, applicationContext.getBean(field.getType()));
+            field.set(bean, applicationContext.getBean(field.getType(), callStack));
         }
 
         return bean;
+    }
+
+    @Override
+    @SneakyThrows
+    public <T> T getBean(Class<T> clazz) {
+        return getBean(clazz, null);
     }
 
 }

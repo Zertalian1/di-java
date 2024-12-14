@@ -1,5 +1,7 @@
 package context;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.example.di_container.context.ApplicationContext;
 import org.example.di_container.factory.BeanFactory;
@@ -15,6 +17,8 @@ import resource.service.TestSingletonClass;
 import resource.service.impl.TestDefaultClassImpl;
 import resource.service.impl.TestPrototypeClassImpl;
 import resource.service.impl.TestSingletonClassImpl;
+
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -129,6 +133,70 @@ class ApplicationContextTest {
         Assertions.assertFalse(applicationContext.isRunning());
         when(beanFactory.getBean(any())).thenReturn(null);
         Assertions.assertThrows(NullPointerException.class, () -> applicationContext.getBean(TestDefaultClass.class));
+    }
+
+    public class TestThreadClass implements Runnable {
+        @Getter
+        private volatile TestDefaultClass value;
+        @Setter
+        private ApplicationContext applicationContext;
+
+        public volatile TestDefaultClass test;
+
+        @Override
+        public void run() {
+            System.out.println("Start!");
+            this.value = applicationContext.getBean(TestDefaultClass.class);
+            System.out.println("Stop! " + this.value);
+            test = value;
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void ApplicationContextThreadTest() {
+        BeanFactory beanFactoryLocal = new BeanFactory() {
+            @Override
+            public <T> T getBean(Class<T> clazz, Set<Class> callStack) {
+                return getBean(clazz);
+            }
+
+            @Override
+            public <T> T getBean(Class<T> clazz) {
+                return (T) new TestDefaultClassImpl();
+            }
+        };
+
+        applicationContext.setBeanFactory(beanFactoryLocal);
+
+        TestThreadClass testThread1 = new TestThreadClass();
+        testThread1.setApplicationContext(applicationContext);
+        Thread thread1 = new Thread(testThread1);
+        thread1.setName("thread1");
+
+        TestThreadClass testThread2 = new TestThreadClass();
+        testThread2.setApplicationContext(applicationContext);
+        Thread thread2 = new Thread(testThread2);
+        thread2.setName("thread2");
+
+        thread1.start();
+        thread2.start();
+        thread1.join();
+        thread2.join();
+
+        TestDefaultClass value1 = testThread1.getValue();
+        TestDefaultClass value2 = testThread2.getValue();
+
+        Assertions.assertEquals(value1, value2);
+    }
+
+    @Test
+    void Test() {
+        Class<?> clazz1 = TestDefaultClassImpl.class;
+        Class<?> clazz2 = TestDefaultClass.class;
+
+        TestDefaultClass clazz3 = new TestDefaultClassImpl();
+        System.out.println();
     }
 
 }
