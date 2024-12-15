@@ -15,7 +15,11 @@ import org.example.di_container.processor.PreDestroyBeanProcessor;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ApplicationContext {
@@ -97,6 +101,15 @@ public class ApplicationContext {
                 return bean;
             }
 
+            Parameter[] parameters = initMethod.getParameters();
+            Object[] args = new Object[parameters.length];
+
+            if (parameters.length > 0) {
+                for (int i = 0; i < parameters.length; i++) {
+                    args[i] = getBean(parameters[i].getType());
+                }
+            }
+
             bean = (T) initMethod.invoke(objectOwner);
 
             if (initMethod.getAnnotation(Bean.class) != null) {
@@ -146,7 +159,7 @@ public class ApplicationContext {
         if (beanMap.containsKey(clazz)) {
             return beanMap.get(clazz);
         }
-        for (Map. Entry<Class, Object> entry : beanMap.entrySet()) {
+        for (Map.Entry<Class, Object> entry : beanMap.entrySet()) {
             if (clazz.isAssignableFrom(entry.getKey())) {
                 return entry.getValue();
             }
