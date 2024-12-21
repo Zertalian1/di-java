@@ -10,11 +10,11 @@ import testApplication.service.impl.LittleFireworkService;
 @Configuration
 public class DiConfig {
 
-    @Autowired
-    private NewYearShopService shopService;
+   /* @Autowired
+    private NewYearShopService shopService;*/
 
     @Bean
-    public FireworkService createFireworkService() {
+    public FireworkService createFireworkService(@Autowired NewYearShopService shopService) {
         shopService.buy();
         return new LittleFireworkService();
     }

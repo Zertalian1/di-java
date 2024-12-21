@@ -21,6 +21,8 @@ public class TypicalNewYearServiceImpl implements NewYearService {
     private ShowService showService;
     @Autowired
     private FireworkService fireworkService;
+    @Autowired
+    private CatService catService;
 
     private Person person;
     private Gift gift;
@@ -39,6 +41,7 @@ public class TypicalNewYearServiceImpl implements NewYearService {
 
     @Override
     public void dayBeforeNewYear() {
+        ;
         System.out.println("\n***ДООООБРОЕ УТРО, ДО НОВОГО ГОДА ОСТАЛОСЬ 14 ЧАСов*** \n");
 
         System.out.printf("Перед началом празнования, нашему %d летнему %s необходимо подготовить стишок) %n", person.getAge(), person.getName());
@@ -57,6 +60,7 @@ public class TypicalNewYearServiceImpl implements NewYearService {
             showService.watchShow("Рен тв");
         }
 
+        catService.dropTree(null);
     }
 
     @Override
