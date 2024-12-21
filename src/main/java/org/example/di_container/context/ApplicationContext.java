@@ -2,10 +2,7 @@ package org.example.di_container.context;
 
 import lombok.Setter;
 import lombok.SneakyThrows;
-import org.example.di_container.annotation.Bean;
-import org.example.di_container.annotation.Configuration;
-import org.example.di_container.annotation.Scope;
-import org.example.di_container.annotation.Service;
+import org.example.di_container.annotation.*;
 import org.example.di_container.enums.ScopeType;
 import org.example.di_container.factory.BeanFactory;
 import org.example.di_container.interceptors.AutowiredInterceptor;
@@ -106,11 +103,13 @@ public class ApplicationContext {
 
             if (parameters.length > 0) {
                 for (int i = 0; i < parameters.length; i++) {
-                    args[i] = getBean(parameters[i].getType());
+                    if (parameters[i].isAnnotationPresent(Autowired.class)) {
+                        args[i] = getBean(parameters[i].getType());
+                    }
                 }
             }
 
-            bean = (T) initMethod.invoke(objectOwner);
+            bean = (T) initMethod.invoke(objectOwner, args);
 
             if (initMethod.getAnnotation(Bean.class) != null) {
                 Scope annotation = initMethod.getAnnotation(Scope.class);
